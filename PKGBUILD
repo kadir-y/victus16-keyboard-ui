@@ -1,4 +1,4 @@
-# Maintainer: Kadir <kadir@localhost>
+# Maintainer: Abdulkadir <contact@kadiryildirim.me>
 pkgname=victus16-keyboard-ui
 pkgver=1.0.0
 pkgrel=1

@@ -1067,14 +1067,6 @@ class KeyboardControllerApp(Gtk.Application):
         else:
             self._update_status("⚠ Could not turn off!")
 
-    def _on_off(self, btn):
-        ok = write_sysfs(BRIGHTNESS_PATH, '0')
-        if ok:
-            self.brightness_scale.set_value(0)
-            self._update_status("Keyboard backlight turned off")
-        else:
-            self._update_status("⚠ Could not turn off!")
-
 if __name__ == '__main__':
     app = KeyboardControllerApp()
     app.run(None)
