@@ -1,0 +1,3 @@
+# Allow passwordless tee to keyboard backlight sysfs for victus16-keyboard
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/tee /sys/class/leds/hp\:\:kbd_backlight/brightness
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/tee /sys/class/leds/hp\:\:kbd_backlight/multi_intensity
