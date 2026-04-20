@@ -3,6 +3,7 @@ pkg/
 src/
 *.pkg.tar.*
 *.tar.gz
+victus16-keyboard-ui/
 
 # Python
 __pycache__/
