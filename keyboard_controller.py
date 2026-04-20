@@ -32,15 +32,26 @@ DEFAULT_TEMPLATES = [
     {"name": "Cyberpunk", "icon": "", "hue": 285, "sat": 0.9, "val": 1.0, "brightness": 200, "desc": "Vibrant neon purple"},
     {"name": "Ocean",     "icon": "", "hue": 195, "sat": 0.9, "val": 1.0, "brightness": 180, "desc": "Deep aquatic blue"},
     {"name": "Lava",      "icon": "", "hue": 5,   "sat": 0.9, "val": 1.0, "brightness": 220, "desc": "Intense molten red"},
+    {"name": "Off",       "icon": "⏻", "hue": 0,   "sat": 0.0, "val": 1.0, "brightness": 0,   "desc": "Turn off backlight", "is_system": True},
 ]
 def load_templates():
+    templates = []
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                templates = json.load(f)
         except Exception as e:
             print(f"Error loading templates: {e}")
-    return DEFAULT_TEMPLATES.copy()
+    if not templates:
+        templates = DEFAULT_TEMPLATES.copy()
+    
+    # Ensure system templates exist in user's saved templates
+    sys_templates = [t for t in DEFAULT_TEMPLATES if t.get('is_system')]
+    for st in sys_templates:
+        if not any(t.get('name') == st['name'] for t in templates):
+            templates.append(st)
+            
+    return templates
 
 def save_templates(templates):
     os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -589,11 +600,6 @@ class KeyboardControllerApp(Gtk.Application):
         self.tmpl_name_entry = Gtk.Entry(placeholder_text="Template Name")
         new_tmpl_box.append(self.tmpl_name_entry)
         
-        self.tmpl_icon_entry = Gtk.Entry(placeholder_text="Icon")
-        self.tmpl_icon_entry.set_max_length(2)
-        self.tmpl_icon_entry.set_width_chars(4)
-        new_tmpl_box.append(self.tmpl_icon_entry)
-        
         self.tmpl_desc_entry = Gtk.Entry(placeholder_text="Description")
         new_tmpl_box.append(self.tmpl_desc_entry)
         
@@ -608,15 +614,16 @@ class KeyboardControllerApp(Gtk.Application):
         self.new_tmpl_revealer.set_child(new_tmpl_box)
         template_card.append(self.new_tmpl_revealer)
 
-        # ─── Template Adjustment Sliders ───
+        # ─── Advanced Adjustment Expander ───
+        self.adjust_expander = Gtk.Expander(label="Advanced Adjustment")
+        self.adjust_expander.add_css_class('section-title')
+        self.adjust_expander.set_margin_top(16)
+        right_col.append(self.adjust_expander)
+
         self.adjust_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.adjust_card.add_css_class('adjust-card')
-        right_col.append(self.adjust_card)
-
-        adj_title = Gtk.Label(label="Template Adjustments")
-        adj_title.add_css_class('section-title')
-        adj_title.set_halign(Gtk.Align.START)
-        self.adjust_card.append(adj_title)
+        self.adjust_card.set_margin_top(12)
+        self.adjust_expander.set_child(self.adjust_card)
 
         self.adjust_info_label = Gtk.Label(label="Select a template")
         self.adjust_info_label.add_css_class('adjust-label')
@@ -711,20 +718,9 @@ class KeyboardControllerApp(Gtk.Application):
         self.hex_entry.connect('activate', self._on_hex_apply)
         hex_card.append(self.hex_entry)
 
-        # ─── Current Color Info ───
-        self.color_info_label = Gtk.Label(label="")
-        self.color_info_label.add_css_class('color-label')
-        self.color_info_label.set_halign(Gtk.Align.CENTER)
-        main_box.append(self.color_info_label)
+        # (Color Info Label removed)
 
-        # ─── Off Button ───
-        off_btn = Gtk.Button(label="Turn Off Backlight")
-        off_btn.add_css_class('off-btn')
-        off_btn.set_halign(Gtk.Align.CENTER)
-        off_btn.set_margin_top(10)
-        off_btn.set_margin_bottom(20)
-        off_btn.connect('clicked', self._on_off)
-        main_box.append(off_btn)
+        # (Off button removed from here, now a template)
 
         # ─── Status ───
         self.status_label = Gtk.Label(label="")
@@ -790,10 +786,6 @@ class KeyboardControllerApp(Gtk.Application):
         # Update color wheel
         self.color_wheel.set_color(r, g, b)
 
-        # Update info label
-        self.color_info_label.set_text(
-            f"RGB({r}, {g}, {b})  •  #{r:02X}{g:02X}{b:02X}")
-
     def _update_status(self, msg):
         self.status_label.set_text(msg)
         GLib.timeout_add(3000, lambda: self.status_label.set_text(""))
@@ -851,29 +843,30 @@ class KeyboardControllerApp(Gtk.Application):
 
             btn_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
             btn_box.set_halign(Gtk.Align.CENTER)
-
             top_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             top_row.set_halign(Gtk.Align.CENTER)
 
-            tr, tg, tb = colorsys.hsv_to_rgb(tmpl['hue'] / 360, tmpl['sat'], tmpl['val'])
-            swatch = Gtk.Box()
-            swatch.add_css_class('color-swatch')
-            swatch.set_size_request(28, 28)
-            swatch_css = Gtk.CssProvider()
-            # Use unique class for each color
-            swatch_class = f"swatch-{abs(hash(tmpl['name']))}"
-            swatch_css.load_from_data(
-                f".{swatch_class} {{ background-color: rgb({int(tr*255)},{int(tg*255)},{int(tb*255)}); }}"
-                .encode())
-            Gtk.StyleContext.add_provider_for_display(
-                Gdk.Display.get_default(), swatch_css,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-            swatch.add_css_class(swatch_class)
-            top_row.append(swatch)
+            if tmpl.get('name') == 'Off':
+                icon_label = Gtk.Label(label=tmpl.get('icon', '⏻'))
+                icon_label.add_css_class('template-icon')
+                top_row.append(icon_label)
+            else:
+                tr, tg, tb = colorsys.hsv_to_rgb(tmpl['hue'] / 360, tmpl['sat'], tmpl['val'])
+                swatch = Gtk.Box()
+                swatch.add_css_class('color-swatch')
+                swatch.set_size_request(28, 28)
+                swatch_css = Gtk.CssProvider()
+                # Use unique class for each color
+                swatch_class = f"swatch-{abs(hash(tmpl['name']))}"
+                swatch_css.load_from_data(
+                    f".{swatch_class} {{ background-color: rgb({int(tr*255)},{int(tg*255)},{int(tb*255)}); }}"
+                    .encode())
+                Gtk.StyleContext.add_provider_for_display(
+                    Gdk.Display.get_default(), swatch_css,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+                swatch.add_css_class(swatch_class)
+                top_row.append(swatch)
 
-            icon_label = Gtk.Label(label=tmpl['icon'])
-            icon_label.add_css_class('template-icon')
-            top_row.append(icon_label)
             btn_box.append(top_row)
 
             name_label = Gtk.Label(label=tmpl['name'])
@@ -903,12 +896,11 @@ class KeyboardControllerApp(Gtk.Application):
 
     def _confirm_save_new_template(self, btn):
         name = self.tmpl_name_entry.get_text().strip()
-        icon = self.tmpl_icon_entry.get_text().strip() or "✨"
         desc = self.tmpl_desc_entry.get_text().strip()
         if name:
             new_tmpl = {
                 "name": name,
-                "icon": icon,
+                "icon": "",
                 "hue": self.hue_scale.get_value(),
                 "sat": self.sat_scale.get_value() / 100.0,
                 "val": self.active_template['val'] if self.active_template else 1.0,
@@ -921,13 +913,15 @@ class KeyboardControllerApp(Gtk.Application):
             self._update_status(f"Template '{name}' saved.")
             self.new_tmpl_revealer.set_reveal_child(False)
             self.tmpl_name_entry.set_text("")
-            self.tmpl_icon_entry.set_text("")
             self.tmpl_desc_entry.set_text("")
         else:
             self._update_status("⚠ Template name cannot be empty!")
 
     def _on_update_template(self, btn):
         if self.active_template and self.active_template in self.templates:
+            if self.active_template.get('is_system'):
+                self._update_status("⚠ System templates cannot be updated.")
+                return
             self.active_template['hue'] = self.hue_scale.get_value()
             self.active_template['sat'] = self.sat_scale.get_value() / 100.0
             self.active_template['brightness'] = int(self.tmpl_brightness_scale.get_value())
@@ -939,6 +933,9 @@ class KeyboardControllerApp(Gtk.Application):
 
     def _on_delete_template(self, btn):
         if self.active_template and self.active_template in self.templates:
+            if self.active_template.get('is_system'):
+                self._update_status("⚠ System templates cannot be deleted.")
+                return
             name = self.active_template['name']
             self.templates.remove(self.active_template)
             self.active_template = None
@@ -956,6 +953,14 @@ class KeyboardControllerApp(Gtk.Application):
         btn.add_css_class('active')
         self.active_template = tmpl
 
+        if tmpl.get('name') == 'Off':
+            self.adjust_info_label.set_text(f"{tmpl.get('icon', '⏻')}  {tmpl['name']} — {tmpl['desc']}")
+            self.brightness_scale.set_value(0)
+            self.adjust_card.set_sensitive(False)
+            return
+
+        self.adjust_card.set_sensitive(True)
+
         # Set adjustment sliders from template values
         self._adjusting = True
         self.hue_scale.set_value(tmpl['hue'])
@@ -964,7 +969,7 @@ class KeyboardControllerApp(Gtk.Application):
         self._adjusting = False
 
         # Update adjustment info
-        self.adjust_info_label.set_text(f"{tmpl['icon']}  {tmpl['name']} — {tmpl['desc']}")
+        self.adjust_info_label.set_text(f"{tmpl['name']} — {tmpl['desc']}")
 
         # Apply color + brightness
         r, g, b = colorsys.hsv_to_rgb(tmpl['hue'] / 360, tmpl['sat'], tmpl['val'])
@@ -1019,13 +1024,20 @@ class KeyboardControllerApp(Gtk.Application):
             Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def _on_wheel_color(self, r, g, b):
+        if not self.active_template:
+            self.adjust_info_label.set_text("Selected from Color Wheel")
 
-        for tb in self.template_buttons:
-            tb.remove_css_class('active')
-        self.active_template = None
-        self.adjust_info_label.set_text("Selected from Color Wheel")
+        self._apply_color(r, g, b)
+        self._sync_sliders_from_rgb(r, g, b)
 
-        # Update hue/sat sliders to match wheel selection
+    def _sync_sliders_from_rgb(self, r, g, b):
+        if self.active_template and self.active_template.get('name') == 'Off':
+            for tb in self.template_buttons:
+                tb.remove_css_class('active')
+            self.active_template = None
+            self.adjust_info_label.set_text("Custom Color")
+            self.adjust_card.set_sensitive(True)
+
         h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
         self._adjusting = True
         self.hue_scale.set_value(h * 360)
@@ -1035,14 +1047,13 @@ class KeyboardControllerApp(Gtk.Application):
         self._adjusting = False
         self._update_sat_slider_gradient(h * 360)
 
-        self._apply_color(r, g, b)
-
     def _on_rgb_entry_activate(self, entry):
         try:
             r = max(0, min(255, int(self.r_entry[1].get_text())))
             g = max(0, min(255, int(self.g_entry[1].get_text())))
             b = max(0, min(255, int(self.b_entry[1].get_text())))
             self._apply_color(r, g, b)
+            self._sync_sliders_from_rgb(r, g, b)
         except ValueError:
             self._update_status("⚠ Invalid RGB value!")
 
@@ -1054,18 +1065,11 @@ class KeyboardControllerApp(Gtk.Application):
                 g = int(hex_text[2:4], 16)
                 b = int(hex_text[4:6], 16)
                 self._apply_color(r, g, b)
+                self._sync_sliders_from_rgb(r, g, b)
             else:
                 self._update_status("⚠ Invalid HEX code! (e.g. #FF00FF)")
         except ValueError:
             self._update_status("⚠ Invalid HEX code!")
-
-    def _on_off(self, btn):
-        ok = write_sysfs(BRIGHTNESS_PATH, '0')
-        if ok:
-            self.brightness_scale.set_value(0)
-            self._update_status("Keyboard backlight turned off")
-        else:
-            self._update_status("⚠ Could not turn off!")
 
 if __name__ == '__main__':
     app = KeyboardControllerApp()
