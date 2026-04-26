@@ -12,9 +12,10 @@ A native Linux GTK4 GUI application designed specifically to control the RGB key
 
 For this application to successfully communicate with your keyboard hardware, you **must** install the HP WMI fan and backlight control kernel module. This module enables the necessary `sysfs` interfaces.
 
-1. Install the required kernel module from: 
+1. Install the required DKMS kernel module from: 
    **[TUXOV/hp-wmi-fan-and-backlight-control](https://github.com/TUXOV/hp-wmi-fan-and-backlight-control)**
-2. Follow the installation instructions provided in that repository.
+   *(Note: This module is currently not provided by AUR and must be installed manually via DKMS as instructed in its repository.)*
+2. Follow the installation instructions provided in that repository (e.g., `make dkms-install`).
 3. **Reboot your system** after installation to ensure the kernel module is properly loaded into the system.
 
 ## 🛠️ How It Works (Behind the Scenes)
@@ -78,7 +79,24 @@ If you prefer to run the application directly from the source code without insta
 - **Advanced Adjustments:** Fine-tune Hue, Saturation, and individual template brightness.
 - **Persistent Data:** Your custom templates are securely saved to `~/.config/victus16-keyboard/templates.json`.
 - **System Templates:** Includes default system templates (like "Off") that cannot be accidentally modified or deleted.
+- **Restore on Boot:** Automatically restore your last active color and brightness on system startup using the included systemd service.
 - **Responsive Layout:** A fluid grid layout that perfectly adapts when resizing the application window.
+
+## 🔄 Restoring State on Boot
+
+If you want your keyboard to automatically light up with your last selected color and brightness when you turn on your computer, you can enable the provided `systemd` user service.
+
+1. **Enable and start the service:**
+   ```bash
+   systemctl --user enable --now victus16-keyboard-restore.service
+   ```
+
+2. **Check the status if it's not working:**
+   ```bash
+   systemctl --user status victus16-keyboard-restore.service
+   ```
+
+*(Troubleshooting: If the service fails, ensure that the `hp-wmi-fan-and-backlight-control` kernel module is installed and loaded. You can verify this by checking if `/sys/class/leds/hp::kbd_backlight/multi_intensity` exists.)*
 
 ## 📝 License
 This project is open-source under the MIT License. Feel free to fork, modify, or contribute!

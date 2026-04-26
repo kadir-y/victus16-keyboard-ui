@@ -6,7 +6,7 @@ Handles loading and saving color templates from/to the user config file.
 import os
 import json
 
-from .constants import CONFIG_DIR, CONFIG_FILE, DEFAULT_TEMPLATES
+from .constants import CONFIG_DIR, CONFIG_FILE, DEFAULT_TEMPLATES, STATE_FILE
 
 
 def load_templates():
@@ -40,3 +40,30 @@ def save_templates(templates):
             json.dump(templates, f, indent=4, ensure_ascii=False)
     except (IOError, OSError) as e:
         print(f"Error saving templates: {e}")
+
+
+def save_state(r, g, b, brightness):
+    """Save the last applied color and brightness state."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    state = {
+        'r': r,
+        'g': g,
+        'b': b,
+        'brightness': brightness
+    }
+    try:
+        with open(STATE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(state, f, indent=4)
+    except (IOError, OSError) as e:
+        print(f"Error saving state: {e}")
+
+
+def load_state():
+    """Load the last applied color and brightness state."""
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            print(f"Error loading state: {e}")
+    return None

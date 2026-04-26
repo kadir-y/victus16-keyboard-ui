@@ -14,6 +14,7 @@ INTENSITY_PATH = f'{LED_BASE}/multi_intensity'
 # ─── User Configuration Paths ───
 CONFIG_DIR = os.path.expanduser('~/.config/victus16-keyboard')
 CONFIG_FILE = os.path.join(CONFIG_DIR, 'templates.json')
+STATE_FILE = os.path.join(CONFIG_DIR, 'state.json')
 
 # ─── Default Color Templates ───
 DEFAULT_TEMPLATES = [

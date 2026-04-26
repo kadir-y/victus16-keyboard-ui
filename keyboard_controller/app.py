@@ -13,7 +13,7 @@ from gi.repository import Gtk, Gdk, GLib, Gio
 from .__init__ import __app_id__
 from .constants import BRIGHTNESS_PATH, INTENSITY_PATH
 from .hardware import read_sysfs, write_sysfs
-from .templates import load_templates, save_templates
+from .templates import load_templates, save_templates, save_state
 from .styles import CSS
 from .widgets import ColorWheelWidget
 
@@ -397,6 +397,7 @@ class KeyboardControllerApp(Gtk.Application):
         self._update_ui_color()
         if ok:
             self._update_status(f"Color set: RGB({r}, {g}, {b})")
+            save_state(r, g, b, self.current_brightness)
         else:
             self._update_status("⚠ Could not set color! Check sudo permissions.")
 
@@ -422,6 +423,7 @@ class KeyboardControllerApp(Gtk.Application):
         ok = write_sysfs(BRIGHTNESS_PATH, str(val))
         if ok:
             self._update_status(f"Brightness: {int(val/255*100)}%")
+            save_state(self.current_r, self.current_g, self.current_b, val)
         else:
             self._update_status("⚠ Could not set brightness!")
         return False

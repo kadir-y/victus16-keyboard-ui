@@ -1,0 +1,10 @@
+[Unit]
+Description=Victus 16 Keyboard Backlight Restore Service
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/victus16-keyboard --restore
+
+[Install]
+WantedBy=default.target
