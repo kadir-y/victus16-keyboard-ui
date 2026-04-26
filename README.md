@@ -45,9 +45,9 @@ This package is available on the Arch User Repository (AUR). You can easily inst
 yay -S victus16-keyboard-ui
 ```
 
-### Option 2: Manual Build (Arch Linux)
+### Option 2: Run from Source (Python)
 
-If you prefer to build the package manually:
+If you prefer to run the application directly from the source code without installing:
 
 1. **Clone the repository:**
    ```bash
@@ -59,12 +59,18 @@ If you prefer to build the package manually:
    cd victus16-keyboard-ui
    ```
 
-3. **Build and install the package:**
+3. **Install Dependencies (Arch Linux example):**
+   Ensure you have Python and GTK4 dependencies installed:
    ```bash
-   makepkg -si
+   sudo pacman -S python python-gobject gtk4
    ```
 
-After installation, you can launch the application directly from your desktop environment's application menu by searching for **Victus 16 Keyboard**.
+4. **Run the application:**
+   ```bash
+   python keyboard_controller.py
+   ```
+
+*Note: Since you are running from source without installing the sudoers file, the application might prompt you for your root password in the terminal when writing to the hardware files.*
 
 ## 🎨 Features
 - **Color Wheel & Hex Input:** Select precise colors with an interactive wheel or specific hex codes.
