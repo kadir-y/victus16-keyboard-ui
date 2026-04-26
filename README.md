@@ -38,11 +38,20 @@ echo 128 | sudo tee /sys/class/leds/hp::kbd_backlight/brightness
 
 ## 🚀 Installation
 
-This application provides a `PKGBUILD` for Arch Linux users. To install it easily:
+### Option 1: Install from AUR (Recommended)
+This package is available on the Arch User Repository (AUR). You can easily install it using an AUR helper like `yay` or `paru`:
+
+```bash
+yay -S victus16-keyboard-ui
+```
+
+### Option 2: Manual Build (Arch Linux)
+
+If you prefer to build the package manually:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/victus16-keyboard-ui.git
+   git clone https://github.com/kadir-y/victus16-keyboard-ui.git
    ```
 
 2. **Navigate to the directory:**
